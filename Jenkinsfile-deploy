@@ -23,8 +23,8 @@ pipeline {
       steps {
         withCredentials([sshUserPrivateKey(credentialsId: 'worker-01', usernameVariable: 'username', keyFileVariable: 'private_key')]) {
           script {
-            remote.name = ${env.HOST}
-            remote.host = ${env.HOST}
+            remote.name = "${env.HOST}"
+            remote.host = "${env.HOST}"
             remote.user = "${username}"
             remote.identity = readFile "${private_key}"
             remote.allowAnyHosts = true
