@@ -1,0 +1,51 @@
+def remote = [:]
+pipeline {
+  agent { label 'ecom' }
+  parameters {
+    string (name: 'DOCKER_IMAGE', description: 'Image to deploy')
+  }
+
+  environment {
+    HOST = "130.193.34.169"
+    TOKEN = credentials('docker_token')
+    PRJ_DIR = "/var/www/ecom"
+    GIT_URL = "git@github.com:AnastasiyaGapochkina01/dos-29-cicd_02.git"
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        git branch: "main", url: "${env.GIT_URL}"
+      }
+    }
+    
+    stage('Prepare Credentials') {
+      steps {
+        withCredentials([sshUserPrivateKey(credentialsId: 'worker-01', usernameVariable: 'username', keyFileVariable: 'private_key')]) {
+          script {
+            remote.name = ${env.HOST}
+            remote.host = ${env.HOST}
+            remote.user = "${username}"
+            remote.identity = readFile "${private_key}"
+            remote.allowAnyHosts = true
+          }
+        }
+      }
+    }
+
+    stage('Deploy') {
+      steps {
+        script {
+          sshCommand remote: remote, command: """
+            set -x
+            docker pull "${params.DOCKER_IMAGE}"
+            export API_IMAGE="${params.DOCKER_IMAGE}"
+            cd "${env.PRJ_DIR}"
+            envsubst < compose.tmpl > compose.yml
+            docker compose up -d
+          """
+        }
+      }
+    }
+  }
+}
